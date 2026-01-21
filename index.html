@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 하루 한자 - 100단어 마스터</title>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.0.0/dist/hanzi-writer.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        :root { --primary: #FF7F50; --secondary: #FFD700; --bg: #FDFCF0; --point-blue: #2196F3; }
+        body { font-family: 'Jua', sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: #333; }
+        header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--secondary); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.8rem; color: var(--primary); cursor: pointer; }
+        .nav-menu button { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-family: 'Jua'; margin-left: 5px; }
+        .page { display: none; padding: 20px; max-width: 800px; margin: auto; }
+        .active { display: block; }
+        .card { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 25px; text-align: center; }
+        .section-title { border-left: 5px solid var(--primary); padding-left: 10px; margin-top: 30px; text-align: left; }
+        .step-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 10px 20px; border-radius: 50px; }
+        .btn-step { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-family: 'Jua'; }
+        .writer-flex { display: flex; justify-content: center; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+        .char-box { border: 2px solid #ddd; border-radius: 15px; background: white; padding: 10px; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
+        .quiz-option { display: block; width: 100%; padding: 15px; margin: 10px 0; background: white; border: 2px solid #eee; border-radius: 15px; font-family: 'Jua'; font-size: 1.2rem; cursor: pointer; }
+        .feedback-msg { height: 35px; font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; }
+        .btn-action { background: #4CAF50; color: white; border: none; padding: 12px 25px; border-radius: 15px; font-size: 1.1rem; cursor: pointer; font-family: 'Jua'; margin: 5px; }
+        .progress-container { width: 100%; background-color: #eee; border-radius: 10px; margin-bottom: 10px; height: 8px; }
+        .progress-fill { height: 100%; background-color: var(--point-blue); border-radius: 10px; width: 0%; transition: 0.3s; }
+        .breakdown-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+        .breakdown-table td { border: 1px solid #eee; padding: 15px; text-align: left; }
+        .hanja-display { font-size: 2.5rem; color: var(--primary); text-align: center; width: 80px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo" onclick="location.reload()">🌟 하루 한자 100</div>
+    <div class="nav-menu">
+        <button onclick="showPage('page1')">학습하기</button>
+        <button onclick="showPage('page2')">직접써보기</button>
+    </div>
+</header>
+
+<div id="page1" class="page active">
+    <div id="study-box">
+        <div class="progress-container"><div id="main-progress" class="progress-fill"></div></div>
+        <div class="step-bar">
+            <button id="prev-btn" class="btn-step" onclick="changeWord(-1)">◀ 이전</button>
+            <span id="progress-text">1 / 100</span>
+            <button id="next-btn" class="btn-step" onclick="changeWord(1)">다음 ▶</button>
+        </div>
+        
+        <div class="card">
+            <button class="btn-action" style="background:#9C27B0;" id="btn-speak-top">🔊 소리 듣기</button>
+            <h1 id="main-word" style="color:var(--point-blue); font-size: 3rem; margin: 10px 0;"></h1>
+            <p id="main-desc" style="font-size:1.4rem; color:#666;"></p>
+            
+            <h3 class="section-title">① 한자 뜻풀이</h3>
+            <table class="breakdown-table" id="breakdown-content"></table>
+
+            <h3 class="section-title">② 획순 보기 (순서대로 써요)</h3>
+            <div id="writers-container" class="writer-flex"></div>
+            <button class="btn-action" style="background:#2196F3;" onclick="playSequence()">다시 보기</button>
+
+            <h3 class="section-title">③ 퀴즈 팡팡!</h3>
+            <div id="quiz-feedback" class="feedback-msg"></div>
+            <div id="quiz-content"></div>
+        </div>
+    </div>
+</div>
+
+<div id="page2" class="page">
+    <div class="card">
+        <h2>✍️ 직접 써보기</h2>
+        <div id="target-draw" class="char-box" style="width:240px; height:240px; margin: auto;"></div>
+        <p id="quiz-guide" style="font-size:1.5rem; color:var(--primary); margin: 20px 0;">글자를 선택해 주세요.</p>
+        <div id="draw-buttons"></div>
+    </div>
+</div>
+
+<script>
+    const hanjaList = [
+        // 1. 가족과 사람 (15)
+        { word: '부모', hanja: '父母', desc: '아버지와 어머니', break: ['아버지 부', '어머니 모'] },
+        { word: '형제', hanja: '兄弟', desc: '형과 남동생', break: ['맏 형', '아우 제'] },
+        { word: '자매', hanja: '姉妹', desc: '언니와 여동생', break: ['누이 자', '누이 매'] },
+        { word: '남녀', hanja: '男女', desc: '남자와 여자', break: ['사내 남', '계집 녀'] },
+        { word: '여자', hanja: '女子', desc: '여성', break: ['계집 녀', '아들 자'] },
+        { word: '남자', hanja: '男子', desc: '남성', break: ['사내 남', '아들 자'] },
+        { word: '자식', hanja: '子息', desc: '아들과 딸', break: ['아들 자', '쉴 식'] },
+        { word: '부인', hanja: '夫人', desc: '남의 아내를 높여 부르는 말', break: ['사내 부', '사람 인'] },
+        { word: '노인', hanja: '老人', desc: '나이가 많은 사람', break: ['늙을 로', '사람 인'] },
+        { word: '본인', hanja: '本人', desc: '자기 자신', break: ['근본 본', '사람 인'] },
+        { word: '명수', hanja: '名手', desc: '기술이 아주 뛰어난 사람', break: ['이름 명', '손 수'] },
+        { word: '수족', hanja: '手足', desc: '손과 발', break: ['손 수', '발 족'] },
+        { word: '민심', hanja: '民心', desc: '백성의 마음', break: ['백성 민', '마음 심'] },
+        { word: '왕실', hanja: '王室', desc: '임금의 집안', break: ['임금 왕', '집 실'] },
+        { word: '인구', hanja: '人口', desc: '한 나라나 지역에 사는 사람의 수', break: ['사람 인', '입 구'] },
+        // 2. 학교와 배움 (15)
+        { word: '학교', hanja: '學校', desc: '배우는 곳', break: ['배울 학', '학교 교'] },
+        { word: '학생', hanja: '學生', desc: '공부하는 사람', break: ['배울 학', '날 생'] },
+        { word: '선생', hanja: '先生', desc: '학생을 가르치는 분', break: ['먼저 선', '날 생'] },
+        { word: '교실', hanja: '敎室', desc: '공부하는 방', break: ['가르칠 교', '집 실'] },
+        { word: '교사', hanja: '敎師', desc: '가르치는 스승', break: ['가르칠 교', '스승 사'] },
+        { word: '학습', hanja: '學習', desc: '배우고 익힘', break: ['배울 학', '익힐 습'] },
+        { word: '입학', hanja: '入學', desc: '학교에 들어감', break: ['들 입', '배울 학'] },
+        { word: '방학', hanja: '放學', desc: '수업을 쉬는 기간', break: ['놓을 방', '배울 학'] },
+        { word: '학년', hanja: '學年', desc: '공부하는 해의 차례', break: ['배울 학', '해 년'] },
+        { word: '한자', hanja: '漢字', desc: '중국에서 만들어진 글자', break: ['한나라 한', '글자 자'] },
+        { word: '문자', hanja: '文字', desc: '글자', break: ['글월 문', '글자 자'] },
+        { word: '독서', hanja: '讀書', desc: '책을 읽음', break: ['읽을 독', '글 서'] },
+        { word: '질문', hanja: '質問', desc: '묻는 것', break: ['바탕 질', '물을 문'] },
+        { word: '회답', hanja: '回答', desc: '대답함', break: ['돌아올 회', '대답 답'] },
+        { word: '정답', hanja: '正答', desc: '바른 답', break: ['바를 정', '대답 답'] },
+        // 3. 자연과 계절 (15)
+        { word: '산천', hanja: '山川', desc: '산과 시내', break: ['산 산', '시내 천'] },
+        { word: '강산', hanja: '江山', desc: '강과 산 (우리나라 국토)', break: ['강 강', '산 산'] },
+        { word: '화산', hanja: '火山', desc: '불을 뿜는 산', break: ['불 화', '산 산'] },
+        { word: '석산', hanja: '石山', desc: '돌이 많은 산', break: ['돌 석', '산 산'] },
+        { word: '초목', hanja: '草木', desc: '풀과 나무', break: ['풀 초', '나무 목'] },
+        { word: '천지', hanja: '天地', desc: '하늘과 땅', break: ['하늘 천', '땅 지'] },
+        { word: '일출', hanja: '日出', desc: '해가 뜸', break: ['날 일', '날 출'] },
+        { word: '월출', hanja: '月出', desc: '달이 뜸', break: ['달 월', '날 출'] },
+        { word: '풍랑', hanja: '風浪', desc: '바람과 물결', break: ['바람 풍', '물결 랑'] },
+        { word: '청산', hanja: '靑山', desc: '푸른 산', break: ['푸를 청', '산 산'] },
+        { word: '백설', hanja: '白雪', desc: '흰 눈', break: ['흰 백', '눈 설'] },
+        { word: '대풍', hanja: '大風', desc: '큰 바람', break: ['클 대', '바람 풍'] },
+        { word: '수력', hanja: '水力', desc: '물의 힘', break: ['물 수', '힘 력'] },
+        { word: '화력', hanja: '火力', desc: '불의 힘', break: ['불 화', '힘 력'] },
+        { word: '만물', hanja: '萬物', desc: '세상의 모든 것', break: ['일만 만', '물건 물'] },
+        // 4. 숫자와 시간 (15)
+        { word: '일일', hanja: '一日', desc: '하루', break: ['한 일', '날 일'] },
+        { word: '일등', hanja: '一等', desc: '첫째 가는 등급', break: ['한 일', '무리 등'] },
+        { word: '삼촌', hanja: '三寸', desc: '아버지의 남자 형제', break: ['석 삼', '마디 촌'] },
+        { word: '사촌', hanja: '四寸', desc: '부모님 형제의 자녀', break: ['넉 사', '마디 촌'] },
+        { word: '오감', hanja: '五感', desc: '다섯 가지 감각', break: ['다섯 오', '느낄 감'] },
+        { word: '유월', hanja: '六月', desc: '6월', break: ['여섯 육', '달 월'] },
+        { word: '시월', hanja: '十月', desc: '10월', break: ['열 십', '달 월'] },
+        { word: '백년', hanja: '百年', desc: '백 년 동안', break: ['일백 백', '해 년'] },
+        { word: '천년', hanja: '千年', desc: '천 년 동안', break: ['일천 천', '해 년'] },
+        { word: '만세', hanja: '萬歲', desc: '아주 오랜 세월 (기쁨의 외침)', break: ['일만 만', '해 세'] },
+        { word: '오전', hanja: '午前', desc: '낮 12시 이전', break: ['낮 오', '앞 전'] },
+        { word: '오후', hanja: '午後', desc: '낮 12시 이후', break: ['낮 오', '뒤 후'] },
+        { word: '시간', hanja: '時間', desc: '어떤 때와 때 사이', break: ['때 시', '사이 간'] },
+        { word: '금일', hanja: '今日', desc: '오늘', break: ['이제 금', '날 일'] },
+        { word: '명년', hanja: '明年', desc: '내년', break: ['밝을 명', '해 년'] },
+        // 5. 방향과 위치 (10)
+        { word: '동서', hanja: '東西', desc: '동쪽과 서쪽', break: ['동녘 동', '서녘 서'] },
+        { word: '남북', hanja: '南北', desc: '남쪽과 북쪽', break: ['남녘 남', '북녘 북'] },
+        { word: '상하', hanja: '上下', desc: '위와 아래', break: ['위 상', '아래 하'] },
+        { word: '좌우', hanja: '左右', desc: '왼쪽과 오른쪽', break: ['왼 좌', '오른 우'] },
+        { word: '중앙', hanja: '中央', desc: '한가운데', break: ['가운데 중', '가운데 앙'] },
+        { word: '내외', hanja: '內外', desc: '안과 겉', break: ['안 내', '바깥 외'] },
+        { word: '대문', hanja: '大門', desc: '큰 문', break: ['클 대', '문 문'] },
+        { word: '입구', hanja: '入口', desc: '들어가는 곳', break: ['들 입', '입 구'] },
+        { word: '출구', hanja: '出口', desc: '나가는 곳', break: ['날 출', '입 구'] },
+        { word: '지상', hanja: '地上', desc: '땅 위', break: ['땅 지', '위 상'] },
+        // 6. 크기와 상태 (15)
+        { word: '대소', hanja: '大小', desc: '크고 작음', break: ['클 대', '작을 소'] },
+        { word: '장단', hanja: '長短', desc: '길고 짧음', break: ['길 장', '짧을 단'] },
+        { word: '다소', hanja: '多少', desc: '많고 적음', break: ['많을 다', '적을 소'] },
+        { word: '고저', hanja: '高低', desc: '높고 낮음', break: ['높을 고', '낮을 저'] },
+        { word: '신구', hanja: '新舊', desc: '새것과 옛것', break: ['새 신', '예 구'] },
+        { word: '안전', hanja: '安全', desc: '위험하지 않음', break: ['편안 안', '온전 전'] },
+        { word: '평탄', hanja: '平坦', desc: '평평하고 고름', break: ['평평할 평', '평탄할 탄'] },
+        { word: '강력', hanja: '強力', desc: '힘이 강함', break: ['강할 강', '힘 력'] },
+        { word: '소식', hanja: '小食', desc: '적게 먹음', break: ['작을 소', '먹을 식'] },
+        { word: '대식', hanja: '大食', desc: '많이 먹음', break: ['클 대', '먹을 식'] },
+        { word: '청년', hanja: '靑年', desc: '젊은 사람', break: ['푸를 청', '해 년'] },
+        { word: '백인', hanja: '白人', desc: '피부가 하얀 사람', break: ['흰 백', '사람 인'] },
+        { word: '장남', hanja: '長男', desc: '첫째 아들', break: ['길 장', '사내 남'] },
+        { word: '장녀', hanja: '長女', desc: '첫째 딸', break: ['길 장', '계집 녀'] },
+        { word: '장수', hanja: '長壽', desc: '오래 삶', break: ['길 장', '목숨 수'] },
+        // 7. 생활과 동작 (15)
+        { word: '식사', hanja: '食事', desc: '밥을 먹음', break: ['먹을 식', '일 사'] },
+        { word: '휴일', hanja: '休日', desc: '쉬는 날', break: ['쉴 휴', '날 일'] },
+        { word: '차도', hanja: '車道', desc: '차가 다니는 길', break: ['수레 차', '길 도'] },
+        { word: '출입문', hanja: '出入門', desc: '드나드는 문', break: ['날 출', '들 입', '문 문'] },
+        { word: '하차', hanja: '下車', desc: '차에서 내림', break: ['아래 하', '수레 차'] },
+        { word: '정차', hanja: '停車', desc: '차가 멈춤', break: ['머무를 정', '수레 차'] },
+        { word: '자습', hanja: '自習', desc: '스스로 공부함', break: ['스스로 자', '익힐 습'] },
+        { word: '생중계', hanja: '生中繼', desc: '현장에서 직접 방송함', break: ['날 생', '가운데 중', '이을 계'] },
+        { word: '만일', hanja: '萬一', desc: '혹시나 있을지 모르는 일', break: ['일만 만', '한 일'] },
+        { word: '일심', hanja: '一心', desc: '한마음', break: ['한 일', '마음 심'] },
+        { word: '평생', hanja: '平生', desc: '살아 있는 내내', break: ['평평할 평', '날 생'] },
+        { word: '주인', hanja: '主人', desc: '물건이나 집의 임자', break: ['임금 주', '사람 인'] },
+        { word: '토지', hanja: '土地', desc: '땅', break: ['흙 토', '땅 지'] },
+        { word: '생기', hanja: '生氣', desc: '싱싱하고 힘찬 기운', break: ['날 생', '기운 기'] },
+        { word: '명문', hanja: '名文', desc: '아주 잘 지은 글', break: ['이름 명', '글월 문'] }
+    ];
+
+    let currentIndex = 0;
+    let writers = [];
+
+    window.onload = () => { loadWord(0); };
+
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function loadWord(idx) {
+        currentIndex = idx;
+        const data = hanjaList[idx];
+        
+        document.getElementById('main-word').innerText = `${data.word} (${data.hanja})`;
+        document.getElementById('main-desc').innerText = `"${data.desc}"`;
+        document.getElementById('progress-text').innerText = `${idx + 1} / ${hanjaList.length}`;
+        document.getElementById('main-progress').style.width = ((idx + 1) / hanjaList.length * 100) + "%";
+        document.getElementById('btn-speak-top').onclick = () => speak(`${data.word}. ${data.desc}`);
+
+        let tableHtml = '';
+        [...data.hanja].forEach((char, i) => {
+            if(data.break[i]) tableHtml += `<tr><td class="hanja-display">${char}</td><td><strong>${data.break[i]}</strong></td></tr>`;
+        });
+        document.getElementById('breakdown-content').innerHTML = tableHtml;
+
+        // 획순 보기 컨테이너 초기화 및 동적 생성
+        const container = document.getElementById('writers-container');
+        container.innerHTML = '';
+        writers = [];
+
+        [...data.hanja].forEach((char, i) => {
+            const div = document.createElement('div');
+            div.id = `view-char-${i}`;
+            div.className = 'char-box';
+            container.appendChild(div);
+            
+            const writer = HanziWriter.create(div.id, char, {
+                width: 100, height: 100, padding: 5, strokeColor: i % 2 === 0 ? '#FF7F50' : '#2196F3'
+            });
+            writers.push(writer);
+        });
+
+        setTimeout(() => playSequence(), 600);
+
+        const quizBox = document.getElementById('quiz-content');
+        const feedback = document.getElementById('quiz-feedback');
+        feedback.innerText = "";
+        
+        const wrongIdx = (idx + 7) % hanjaList.length;
+        const options = [data.hanja, hanjaList[wrongIdx].hanja].sort(() => Math.random() - 0.5);
+        
+        quizBox.innerHTML = `<p>Q. "${data.word}"에 알맞은 한자는?</p>`;
+        options.forEach(opt => {
+            quizBox.innerHTML += `<button class="quiz-option" onclick="checkQuiz(this, '${opt}' === '${data.hanja}')">${opt}</button>`;
+        });
+
+        let btns = '';
+        [...data.hanja].forEach(c => {
+            if (c.match(/[一-龥]/)) btns += `<button class="btn-action" onclick="startDraw('${c}')">${c} 쓰기</button>`;
+        });
+        document.getElementById('draw-buttons').innerHTML = btns;
+    }
+
+    // 모든 글자 순차적 애니메이션
+    async function playSequence() {
+        for (let writer of writers) {
+            writer.hideCharacter();
+        }
+        for (let writer of writers) {
+            await new Promise(resolve => writer.animateCharacter({ onComplete: resolve }));
+        }
+    }
+
+    function checkQuiz(btn, isCorrect) {
+        const feedback = document.getElementById('quiz-feedback');
+        if(isCorrect) {
+            feedback.style.color = "#4CAF50";
+            feedback.innerText = "정답입니다! 🌟";
+            btn.style.background = "#c8e6c9";
+            speak("정답입니다!");
+        } else {
+            feedback.style.color = "#f44336";
+            feedback.innerText = "다시 해보세요! 🐥";
+            btn.style.background = "#ffcdd2";
+            speak("다시 해보세요.");
+            setTimeout(() => {
+                btn.style.background = "white";
+                feedback.innerText = "";
+            }, 1200);
+        }
+    }
+
+    function startDraw(char) {
+        showPage('page2');
+        document.getElementById('target-draw').innerHTML = '';
+        document.getElementById('quiz-guide').innerText = `"${char}"를 써보세요!`;
+        let dw = HanziWriter.create('target-draw', char, { width: 240, height: 240, showCharacter: false, showHintAfterMisses: 1 });
+        dw.quiz({ onComplete: () => { 
+            speak("참 잘했어요!");
+            alert("완벽해요! ✨"); 
+        }});
+    }
+
+    function changeWord(n) {
+        const next = currentIndex + n;
+        if(next >= 0 && next < hanjaList.length) loadWord(next);
+    }
+
+    function showPage(pId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pId).classList.add('active');
+    }
+</script>
+</body>
+</html>
